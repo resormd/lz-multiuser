@@ -1,0 +1,57 @@
+name: Build VSIX
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm test
+      - run: npm run check:ps
+      - run: npm run package
+      - name: Add checksums
+        shell: pwsh
+        run: |
+          Get-ChildItem dist/*.vsix | ForEach-Object {
+            $hash = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $($_.Name)" | Set-Content -LiteralPath ($_.FullName + '.sha256') -Encoding utf8NoBOM
+          }
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows-user-vscode
+          path: dist/*
+  release-draft:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run package
+      - name: Create draft release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          $version = node -p "require('./package.json').version"
+          if ($env:RELEASE_TAG -ne "v$version") { throw 'Tag must match package.json version.' }
+          $asset = (Get-ChildItem dist/*.vsix).FullName
+          $hash = (Get-FileHash -LiteralPath $asset -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $(Split-Path -Leaf $asset)" | Set-Content -LiteralPath ($asset + '.sha256') -Encoding utf8NoBOM
+          gh release create "$env:RELEASE_TAG" "$asset" "$asset.sha256" --draft --prerelease --verify-tag --title "$env:RELEASE_TAG (Preview)" --notes-file RELEASE_NOTES.md

@@ -1,0 +1,96 @@
+{
+  "name": "windows-user-vscode",
+  "displayName": "Windows User VS Code",
+  "description": "在主侧栏选择本地 Windows 用户，在同一桌面打开该用户的 VS Code。",
+  "version": "0.3.0",
+  "publisher": "local-tools",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/resormd/lz-multiuser.git"
+  },
+  "homepage": "https://github.com/resormd/lz-multiuser#readme",
+  "bugs": {
+    "url": "https://github.com/resormd/lz-multiuser/issues"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "windows",
+    "runas",
+    "multi-user"
+  ],
+  "extensionKind": [
+    "ui"
+  ],
+  "main": "./src/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    },
+    "virtualWorkspaces": true
+  },
+  "scripts": {
+    "test": "node --test test/*.test.cjs",
+    "check:ps": "powershell.exe -NoLogo -NoProfile -File scripts/check-powershell.ps1",
+    "package": "node scripts/prepare-dist.cjs && vsce package --no-dependencies --allow-missing-repository --out dist/"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "4.0.0"
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "windowsUserVSCode.open",
+        "title": "用户窗口：选择用户并打开 VS Code",
+        "icon": "$(accounts)"
+      },
+      {
+        "command": "windowsUserVSCode.refresh",
+        "title": "刷新本地用户",
+        "icon": "$(refresh)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "windowsUserVSCode",
+          "title": "用户窗口",
+          "icon": "media/users.svg"
+        }
+      ]
+    },
+    "views": {
+      "windowsUserVSCode": [
+        {
+          "id": "windowsUserVSCode.launcher",
+          "name": "打开用户窗口",
+          "type": "webview",
+          "when": "isWindows"
+        }
+      ]
+    },
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "windowsUserVSCode.open",
+          "when": "isWindows"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "windowsUserVSCode.refresh",
+          "when": "view == windowsUserVSCode.launcher",
+          "group": "navigation"
+        }
+      ]
+    }
+  }
+}

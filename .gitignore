@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.vsix
+!downloads/*.vsix
+*.zip
+.DS_Store
+Thumbs.db
+*.log
+.env
+.env.*
+!.env.example
