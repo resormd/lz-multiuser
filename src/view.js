@@ -11,19 +11,19 @@ label{display:block;font-weight:600;margin-bottom:8px}select{box-sizing:border-b
 button{box-sizing:border-box;width:100%;padding:9px 8px;margin-top:14px;border:0;border-radius:3px;background:var(--vscode-button-background);color:var(--vscode-button-foreground);font:inherit;cursor:pointer}button:hover{background:var(--vscode-button-hoverBackground)}button:disabled{opacity:.55;cursor:default}
 button:focus-visible,select:focus-visible{outline:1px solid var(--vscode-focusBorder);outline-offset:2px}.secondary{margin-top:8px;background:var(--vscode-button-secondaryBackground);color:var(--vscode-button-secondaryForeground)}.secondary:hover{background:var(--vscode-button-secondaryHoverBackground)}
 .status{margin-top:20px;padding:12px;border-left:2px solid var(--vscode-focusBorder);background:var(--vscode-textBlockQuote-background);overflow-wrap:anywhere}.note{font-size:12px;color:var(--vscode-descriptionForeground);margin-top:20px}code{font-family:var(--vscode-editor-font-family)}
-</style></head><body><h2>ѡ���û����򿪴���</h2><p class="intro">�ڵ�ǰ�����д򿪸� Windows �û��� VS Code��</p>
-<label for="users">Windows �û�</label><select id="users" disabled><option>���ڶ�ȡ�����û���</option></select>
-<button id="open" disabled>���´���</button><button id="refresh" class="secondary">ˢ���û��б�</button><button id="browse" class="secondary">ѡ�� VS Code ����</button><p id="executable" class="note"></p>
-<div id="status" class="status" role="status" aria-live="polite">���ڶ�ȡ�û���</div>
-<p class="note">�����û����ڶ��� CMD ������ Windows ���롣�˽��治���ջ򱣴����롣</p><p class="note">�´��ڴӱ��ؿմ��ڿ�ʼ��Codex �˺������ڶ�Ӧ�����е�����¼��</p>
+</style></head><body><h2>选择用户，打开窗口</h2><p class="intro">在当前桌面中打开该 Windows 用户的 VS Code。</p>
+<label for="users">Windows 用户</label><select id="users" disabled><option>正在读取本地用户…</option></select>
+<button id="open" disabled>打开新窗口</button><button id="refresh" class="secondary">刷新用户列表</button><button id="browse" class="secondary">选择 VS Code 程序</button><p id="executable" class="note"></p>
+<div id="status" class="status" role="status" aria-live="polite">正在读取用户…</div>
+<p class="note">其他用户需在独立 CMD 中输入 Windows 密码。此界面不接收或保存密码。</p><p class="note">新窗口从本地空窗口开始。Codex 账号由你在对应窗口中单独登录。</p>
 <script nonce="${nonce}">
 const api=acquireVsCodeApi(), select=document.getElementById('users'), open=document.getElementById('open'), refresh=document.getElementById('refresh'), status=document.getElementById('status');
 const browse=document.getElementById('browse'), executable=document.getElementById('executable');
 const saved=api.getState()||{};let selected=saved.selected;
 window.addEventListener('message',event=>{const state=event.data;if(state.type!=='state')return;
-const previous=select.value;select.replaceChildren();for(const user of state.users){const option=document.createElement('option');option.value=user.name;option.textContent=user.name+(user.current?'����ǰ�û���':'');select.appendChild(option);}
+const previous=select.value;select.replaceChildren();for(const user of state.users){const option=document.createElement('option');option.value=user.name;option.textContent=user.name+(user.current?'（当前用户）':'');select.appendChild(option);}
 const wanted=selected||previous||(state.users.find(u=>u.current)||state.users[0]||{}).name;if(state.users.some(u=>u.name===wanted))select.value=wanted;
-select.disabled=state.busy||!state.users.length;open.disabled=select.disabled;refresh.disabled=state.busy;browse.disabled=state.busy;executable.textContent=state.executable||'��δʶ�� VS Code ·��';open.textContent=state.busy?'���ڵȴ����������':'���´���';status.textContent=state.status;});
+select.disabled=state.busy||!state.users.length;open.disabled=select.disabled;refresh.disabled=state.busy;browse.disabled=state.busy;executable.textContent=state.executable||'尚未识别 VS Code 路径';open.textContent=state.busy?'正在等待启动结果…':'打开新窗口';status.textContent=state.status;});
 select.addEventListener('change',()=>{selected=select.value;api.setState({selected});});
 open.addEventListener('click',()=>api.postMessage({type:'open',user:select.value}));refresh.addEventListener('click',()=>api.postMessage({type:'refresh'}));browse.addEventListener('click',()=>api.postMessage({type:'browse'}));api.postMessage({type:'ready'});
 </script></body></html>`;

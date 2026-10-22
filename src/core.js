@@ -17,7 +17,7 @@ function findExecutable(options = {}) {
   const { saved, execPath = process.execPath, appRoot = '', env = process.env, exists = fs.existsSync } = options;
   // A manual choice is authoritative; don't silently use another install if it disappears.
   if (saved) {
-    if (!supportedExecutable(saved) || !exists(saved)) throw new Error('��ѡ VS Code ���򲻴��ڣ�������ѡ��');
+    if (!supportedExecutable(saved) || !exists(saved)) throw new Error('所选 VS Code 程序不存在，请重新选择。');
     return saved;
   }
   const candidates = [execPath];
@@ -32,7 +32,7 @@ function findExecutable(options = {}) {
     if (base) candidates.push(path.win32.join(base, 'Microsoft VS Code', 'Code.exe'), path.win32.join(base, 'Microsoft VS Code Insiders', 'Code - Insiders.exe'));
   }
   const result = candidates.find(file => supportedExecutable(file) && exists(file));
-  if (!result) throw new Error('δ�ҵ� VS Code��������ѡ�� VS Code ���򡱡�');
+  if (!result) throw new Error('未找到 VS Code，请点击“选择 VS Code 程序”。');
   return result;
 }
 function helper(context, scriptName, request = {}) {

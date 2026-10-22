@@ -11,7 +11,7 @@ Module._load=function(name,...args){
 const {helper}=require('../src/core');
 Module._load=original;
 test('paths are encoded JSON data, never interpolated into shell commands',async()=>{
-  const request={user:'ExampleUser',executable:"E:\\It's & ���� 100%\\Code.exe",bootstrap:'X:\\Extension\\authenticate.cmd'};
+  const request={user:'ExampleUser',executable:"E:\\It's & 中文 100%\\Code.exe",bootstrap:'X:\\Extension\\authenticate.cmd'};
   const context={asAbsolutePath:file=>path.resolve(__dirname,'..',file)};
   await helper(context,'launch.ps1',request);
   assert(launch.exe.endsWith('powershell.exe'));assert.equal(launch.options.shell,undefined);
