@@ -1,8 +1,8 @@
 {
   "name": "windows-user-vscode",
   "displayName": "Windows User VS Code",
-  "description": "在主侧栏选择本地 Windows 用户，在同一桌面打开该用户的 VS Code。",
-  "version": "0.3.0",
+  "description": "��������ѡ�񱾵� Windows �û�����ͬһ����򿪸��û��� VS Code��",
+  "version": "0.3.1",
   "publisher": "local-tools",
   "license": "MIT",
   "repository": {
@@ -49,12 +49,12 @@
     "commands": [
       {
         "command": "windowsUserVSCode.open",
-        "title": "用户窗口：选择用户并打开 VS Code",
+        "title": "�û����ڣ�ѡ���û����� VS Code",
         "icon": "$(accounts)"
       },
       {
         "command": "windowsUserVSCode.refresh",
-        "title": "刷新本地用户",
+        "title": "ˢ�±����û�",
         "icon": "$(refresh)"
       }
     ],
@@ -62,7 +62,7 @@
       "activitybar": [
         {
           "id": "windowsUserVSCode",
-          "title": "用户窗口",
+          "title": "�û�����",
           "icon": "media/users.svg"
         }
       ]
@@ -71,7 +71,7 @@
       "windowsUserVSCode": [
         {
           "id": "windowsUserVSCode.launcher",
-          "name": "打开用户窗口",
+          "name": "���û�����",
           "type": "webview",
           "when": "isWindows"
         }

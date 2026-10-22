@@ -25,7 +25,59 @@ try {
 }
 '@
     $payload = $payload.Replace('__SETTINGS__', $settings64)
-    $env:UW_LAUNCH_PAYLOAD = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($payload))
+    # CreateProcessWithLogonW limits its target command to 1024 characters.
+    # Store only launch code in an owner-controlled folder; no credentials are stored.
+    $currentSid = [Security.Principal.WindowsIdentity]::GetCurrent().User
+    $targetAccount = New-Object Security.Principal.NTAccount ($env:COMPUTERNAME + '\' + $request.user)
+    $targetSid = $targetAccount.Translate([Security.Principal.SecurityIdentifier])
+    $jobRoot = Join-Path $env:ProgramData ('windows-user-vscode-' + $currentSid.Value)
+    if ($jobRoot -match '[%\r\n"]') { throw 'Unsupported ProgramData path.' }
+    $createdRoot = $false
+    if (-not (Test-Path -LiteralPath $jobRoot)) {
+        [void](New-Item -ItemType Directory -Path $jobRoot -ErrorAction Stop)
+        $createdRoot = $true
+    }
+    $rootInfo = Get-Item -LiteralPath $jobRoot -Force
+    if ($rootInfo.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'Launcher storage must not be a reparse point.' }
+    $rootAcl = Get-Acl -LiteralPath $jobRoot
+    if ($rootAcl.GetOwner([Security.Principal.SecurityIdentifier]) -ne $currentSid) { throw 'Launcher storage belongs to a different account.' }
+    if ($createdRoot) {
+        $rootAcl = New-Object Security.AccessControl.DirectorySecurity
+        $rootAcl.SetOwner($currentSid)
+        $rootAcl.SetAccessRuleProtection($true, $false)
+        foreach ($sid in @($currentSid.Value, 'S-1-5-18', 'S-1-5-32-544')) {
+            $rule = New-Object Security.AccessControl.FileSystemAccessRule ([Security.Principal.SecurityIdentifier]$sid), 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'
+            [void]$rootAcl.AddAccessRule($rule)
+        }
+        $rule = New-Object Security.AccessControl.FileSystemAccessRule ([Security.Principal.SecurityIdentifier]'S-1-5-32-545'), 'ReadAndExecute', 'None', 'None', 'Allow'
+        [void]$rootAcl.AddAccessRule($rule)
+        Set-Acl -LiteralPath $jobRoot -AclObject $rootAcl
+    }
+    # Reject an existing root with writable permissions for another account.
+    foreach ($rule in $rootAcl.GetAccessRules($true, $true, [Security.Principal.SecurityIdentifier])) {
+        if ($rule.AccessControlType -eq 'Allow' -and $rule.IdentityReference.Value -notin @($currentSid.Value, 'S-1-5-18', 'S-1-5-32-544') -and
+            ($rule.FileSystemRights -band ([Security.AccessControl.FileSystemRights]::Write -bor [Security.AccessControl.FileSystemRights]::Delete -bor [Security.AccessControl.FileSystemRights]::ChangePermissions -bor [Security.AccessControl.FileSystemRights]::TakeOwnership))) {
+            throw 'Launcher storage has unsafe writable permissions. No permissions were changed on this existing folder.'
+        }
+    }
+    $jobDirectory = Join-Path $jobRoot ([guid]::NewGuid().ToString('N'))
+    [void](New-Item -ItemType Directory -Path $jobDirectory)
+    $jobAcl = New-Object Security.AccessControl.DirectorySecurity
+    $jobAcl.SetOwner($currentSid)
+    $jobAcl.SetAccessRuleProtection($true, $false)
+    foreach ($sid in @($currentSid.Value, 'S-1-5-18', 'S-1-5-32-544')) {
+        [void]$jobAcl.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule ([Security.Principal.SecurityIdentifier]$sid), 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
+    }
+    if ($targetSid -ne $currentSid) {
+        [void]$jobAcl.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule $targetSid, 'ReadAndExecute', 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
+    }
+    Set-Acl -LiteralPath $jobDirectory -AclObject $jobAcl
+    $scriptFile = Join-Path $jobDirectory 'launch.ps1'
+    [IO.File]::WriteAllText($scriptFile, $payload, (New-Object Text.UTF8Encoding $true))
+    $powerShell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+    $targetCommand = '"' + $powerShell + '" -NoLogo -NoProfile -File "' + $scriptFile + '"'
+    if ($targetCommand.Length -ge 1024) { throw 'Target command exceeds the Windows logon-process limit.' }
+    $env:UW_SCRIPT_PATH = $scriptFile
     $env:UW_ACCOUNT = $env:COMPUTERNAME + '\' + $request.user
     $env:UW_SAME_USER = [string][int]([Security.Principal.WindowsIdentity]::GetCurrent().Name -ieq $env:UW_ACCOUNT)
     $cmd = Join-Path $env:SystemRoot 'System32\cmd.exe'
@@ -41,6 +93,7 @@ try {
     if (-not $created) { throw (New-Object ComponentModel.Win32Exception ([Runtime.InteropServices.Marshal]::GetLastWin32Error())) }
     [void][UserWindowNative]::CloseHandle($process.thread)
     [void][UserWindowNative]::CloseHandle($process.process)
+    @{jobDirectory=$jobDirectory; commandLength=$targetCommand.Length} | ConvertTo-Json -Compress
 } catch {
     [Console]::Error.WriteLine($_.Exception.Message)
     exit 1

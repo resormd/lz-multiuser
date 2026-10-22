@@ -1,6 +1,14 @@
 # Changelog
 
-## 0.3.0 — Portable distribution preview
+## 0.3.1 �� �����������޸�
+
+- �޸����˻���������� Windows 1024 �ַ����ƺ󷵻ء��������󡱵����⡣
+- ����������д�뱾���ߴ����Ķ��ڽű���Ŀ���˻�ֻ�ж�ȡ��ִ��Ȩ�ޣ���������������ơ�
+- ��ɽ��̺�����������νű����޷������Ľű������ڹ����Լ�����ҵĿ¼�С�
+- ������ʱ��ʾ���� VS Code ������˵������ǿ�ƽ�����������ر��û����ڡ�
+- ����ͨ�ð�İ�װ·���Զ�ʶ���ֶ�ѡ������� VSIX �ַ���
+
+## 0.3.0 �� Portable distribution preview
 
 - Generalized sidebar account selection for other Windows computers.
 - Automatically detect VS Code / Insiders and allow a machine-local executable choice.

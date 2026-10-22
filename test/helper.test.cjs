@@ -11,7 +11,7 @@ Module._load=function(name,...args){
 const {helper}=require('../src/core');
 Module._load=original;
 test('paths are encoded JSON data, never interpolated into shell commands',async()=>{
-  const request={user:'ExampleUser',executable:"E:\\It's & 中文 100%\\Code.exe",bootstrap:'X:\\Extension\\authenticate.cmd'};
+  const request={user:'ExampleUser',executable:"E:\\It's & ���� 100%\\Code.exe",bootstrap:'X:\\Extension\\authenticate.cmd'};
   const context={asAbsolutePath:file=>path.resolve(__dirname,'..',file)};
   await helper(context,'launch.ps1',request);
   assert(launch.exe.endsWith('powershell.exe'));assert.equal(launch.options.shell,undefined);
@@ -21,5 +21,6 @@ test('paths are encoded JSON data, never interpolated into shell commands',async
   const data=script.match(/FromBase64String\('([^']+)'\)/)[1];
   assert.deepEqual(JSON.parse(Buffer.from(data,'base64').toString('utf8')),request);
   assert(script.includes('$false, 0x10'));
-  assert(script.includes('UW_LAUNCH_PAYLOAD'));
+  assert(script.includes('UW_SCRIPT_PATH'));
+  assert(script.includes('$targetCommand.Length -ge 1024'));
 });

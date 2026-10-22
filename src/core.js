@@ -17,7 +17,7 @@ function findExecutable(options = {}) {
   const { saved, execPath = process.execPath, appRoot = '', env = process.env, exists = fs.existsSync } = options;
   // A manual choice is authoritative; don't silently use another install if it disappears.
   if (saved) {
-    if (!supportedExecutable(saved) || !exists(saved)) throw new Error('所选 VS Code 程序不存在，请重新选择。');
+    if (!supportedExecutable(saved) || !exists(saved)) throw new Error('��ѡ VS Code ���򲻴��ڣ�������ѡ��');
     return saved;
   }
   const candidates = [execPath];
@@ -32,12 +32,12 @@ function findExecutable(options = {}) {
     if (base) candidates.push(path.win32.join(base, 'Microsoft VS Code', 'Code.exe'), path.win32.join(base, 'Microsoft VS Code Insiders', 'Code - Insiders.exe'));
   }
   const result = candidates.find(file => supportedExecutable(file) && exists(file));
-  if (!result) throw new Error('未找到 VS Code，请点击“选择 VS Code 程序”。');
+  if (!result) throw new Error('δ�ҵ� VS Code��������ѡ�� VS Code ���򡱡�');
   return result;
 }
 function helper(context, scriptName, request = {}) {
   const request64 = Buffer.from(JSON.stringify(request), 'utf8').toString('base64');
-  let script = "$ErrorActionPreference='Stop'\n$ProgressPreference='SilentlyContinue'\n[Console]::OutputEncoding=New-Object Text.UTF8Encoding $false\n" +
+  let script = "$ErrorActionPreference='Stop'\n$ProgressPreference='SilentlyContinue'\n$env:PSModulePath=$PSHOME+'\\Modules'\n[Console]::OutputEncoding=New-Object Text.UTF8Encoding $false\n" +
     `$request = ConvertFrom-Json ([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${request64}')))\n`;
   if (scriptName === 'launch.ps1') script += fs.readFileSync(context.asAbsolutePath('src/native-console.ps1'), 'utf8') + '\n';
   script += fs.readFileSync(context.asAbsolutePath(`src/${scriptName}`), 'utf8');
@@ -48,4 +48,14 @@ function helper(context, scriptName, request = {}) {
       (error, stdout, stderr) => error ? reject(new Error((stderr || error.message).trim())) : resolve(stdout.trim()));
   });
 }
-module.exports = { safeUser, cleanEnvironment, supportedExecutable, findExecutable, helper };
+function cleanupJob(directory, env = process.env) {
+  if (typeof directory !== 'string' || !env.ProgramData) return;
+  const relative = path.win32.relative(path.win32.resolve(env.ProgramData), path.win32.resolve(directory));
+  if (!/^windows-user-vscode-S-1-5-21-[0-9-]+\\[a-f0-9]{32}$/i.test(relative)) return;
+  try {
+    const root = path.win32.dirname(directory);
+    if (fs.lstatSync(root).isSymbolicLink() || fs.lstatSync(directory).isSymbolicLink()) return;
+    fs.rmSync(directory, {recursive:true, force:true});
+  } catch { /* Keep a still-in-use job rather than disrupt a target process. */ }
+}
+module.exports = { safeUser, cleanEnvironment, supportedExecutable, findExecutable, helper, cleanupJob };

@@ -1,6 +1,6 @@
 'use strict';
 const vscode = require('vscode');
-const {safeUser, findExecutable, helper} = require('./core');
+const {safeUser, findExecutable, helper, cleanupJob} = require('./core');
 const {getHtml} = require('./view');
 
 class UserWindowsView {
@@ -8,8 +8,9 @@ class UserWindowsView {
     this.context = context;
     this.helper = services.helper || helper;
     this.findExecutable = services.findExecutable || findExecutable;
+    this.cleanupJob = services.cleanupJob || cleanupJob;
     this.users = []; this.busy = false; this.executable = '';
-    this.status = '选择一个 Windows 用户打开新窗口。';
+    this.status = 'ѡ��һ�� Windows �û����´��ڡ�';
   }
   resolveWebviewView(view) {
     this.view = view;
@@ -33,39 +34,40 @@ class UserWindowsView {
       const data = JSON.parse(await this.helper(this.context, 'users.ps1'));
       this.users = data.users.filter(user => safeUser(user.name));
       this.detectExecutable();
-      this.status = this.users.length ? '选择用户后，点击“打开新窗口”。' : '没有找到可用的本地用户。';
+      this.status = this.users.length ? 'ѡ���û��󣬵�������´��ڡ���' : 'û���ҵ����õı����û���';
     } catch (error) { this.status = error.message; }
     this.publish();
   }
   async browse() {
     if (this.busy) return;
-    const files = await vscode.window.showOpenDialog({title:'选择 Code.exe 或 Code - Insiders.exe', canSelectFiles:true, canSelectFolders:false, canSelectMany:false, filters:{'VS Code':['exe']}});
+    const files = await vscode.window.showOpenDialog({title:'ѡ�� Code.exe �� Code - Insiders.exe', canSelectFiles:true, canSelectFolders:false, canSelectMany:false, filters:{'VS Code':['exe']}});
     if (!files?.length) return;
     try {
       const selected = this.findExecutable({saved:files[0].fsPath});
       await this.context.globalState.update('executablePath', selected);
       this.executable = selected;
-      this.status = '已保存本机程序路径。';
+      this.status = '�ѱ��汾������·����';
     } catch (error) { this.status = error.message; }
     this.publish();
   }
   async open(name) {
     if (this.busy) return;
     const user = this.users.find(item => item.name === name);
-    if (!user || !safeUser(name)) { this.status = '请选择列表中的有效本地用户。'; return this.publish(); }
+    if (!user || !safeUser(name)) { this.status = '��ѡ���б��е���Ч�����û���'; return this.publish(); }
     this.busy = true;
-    this.status = user.current ? `正在为 ${name} 打开本地空窗口…` : `请在独立 CMD 中亲自输入 ${name} 的 Windows 密码，输入时不显示字符。`;
+    this.status = user.current ? `����Ϊ ${name} �򿪱��ؿմ��ڡ�` : `���ڶ��� CMD ���������� ${name} �� Windows ���룬����ʱ����ʾ�ַ���`;
     this.publish();
+    let job;
     try {
       const executable = this.detectExecutable();
       const request = {user:name, executable, bootstrap:this.context.asAbsolutePath('src/authenticate.cmd')};
-      await this.helper(this.context, 'launch.ps1', request);
+      job = JSON.parse(await this.helper(this.context, 'launch.ps1', request));
       const result = JSON.parse(await this.helper(this.context, 'verify.ps1', request));
       this.status = result.processes.length
-        ? `已检测到 ${result.account} 的窗口进程。请确认新窗口可见；目录与扩展登录仍需单独核验。`
-        : `未核验到 ${name} 的窗口进程。请查看 CMD 错误信息。`;
-    } catch (error) { this.status = `启动未完成：${error.message}`; }
-    finally { this.busy = false; this.publish(); }
+        ? `�Ѽ�⵽ ${result.account} �Ĵ��ڽ��̡���ȷ���´��ڿɼ���Ŀ¼����չ��¼���赥�����顣`
+        : `δ���鵽 ${name} �Ĵ��ڽ��̡���鿴 CMD ���������־��ʾ vscode-updating�����ȱ������д��ڲ���� VS Code ���¡�`;
+    } catch (error) { this.status = `����δ��ɣ�${error.message}`; }
+    finally { if (job?.jobDirectory) this.cleanupJob(job.jobDirectory); this.busy = false; this.publish(); }
   }
 }
 function activate(context) {

@@ -17,3 +17,5 @@ Before publishing a release, manually verify:
 Do not add password collection to the webview, `/savecred`, security-policy changes, automatic elevation or credential-file access. Keep UI actions separate from local-account enumeration and validate messages before starting processes.
 
 Do not include machine-specific logs, screenshots of authentication, account details, `.env` files, credentials, or personal VS Code profiles in commits.
+
+For changes to cross-account launching, check the **actual command passed to runas**, not only CMD's 8191-character limit. The logon-process command must stay below 1024 characters. Verify short-file argument quoting, target read-only access to the temporary script, cleanup boundaries, and behavior when script execution is disallowed. Do not bypass execution policy as a fallback. A pending VS Code updater must be reported without killing the installer or closing user windows.

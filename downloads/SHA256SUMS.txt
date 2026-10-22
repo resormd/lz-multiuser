@@ -1,1 +1,2 @@
 94cb1b19e79247e0d728ff5012a84468c9e9f498f362c06db57df3cfee54bc15  windows-user-vscode-0.3.0.vsix
+806895fbe366db2f23a796663b76774b7356a67b98aeaafead40682cf93051fe  windows-user-vscode-0.3.1.vsix

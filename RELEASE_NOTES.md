@@ -1,6 +1,8 @@
-# Windows User VS Code 0.3.0 (Preview)
+# Windows User VS Code 0.3.1��Ԥ���棩
 
-Download the VSIX attachment and use **Extensions → … → Install from VSIX…**. No development tools are required on the destination computer.
+�����޸����˻�����ʱ������� Windows 1024 �ַ����ƶ����ء��������󡱵����⣬���þ������޶�ȡȨ�޵Ķ��ڽű��������� VS Code ���������Ų���ʾ�����������롢���ı�����û����á����ƹ� Windows ��¼����֯�ű����ԡ�
+
+Download the VSIX attachment and use **Extensions �� �� �� Install from VSIX��**. No development tools are required on the destination computer.
 
 Select an existing local Windows user from the sidebar. For another account, enter its Windows password yourself at the independent runas prompt. Passwords are not saved by this extension.
 
